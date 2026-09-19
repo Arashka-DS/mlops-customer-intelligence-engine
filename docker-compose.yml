@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres_bi:
+    image: postgres:15-alpine
+    container_name: retention_db
+    environment:
+      POSTGRES_USER: bi_admin
+      POSTGRES_PASSWORD: bi_password
+      POSTGRES_DB: retention_warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  retention_api:
+    build: .
+    container_name: retention_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres_bi
+    depends_on:
+      - postgres_bi
