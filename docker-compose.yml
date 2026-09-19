@@ -13,6 +13,21 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase_bi
+    ports:
+      - "3000:3000"
+    environment:
+      - MB_DB_TYPE=postgres
+      - MB_DB_DBNAME=retention_warehouse
+      - MB_DB_PORT=5432
+      - MB_DB_USER=bi_admin
+      - MB_DB_PASS=bi_password
+      - MB_DB_HOST=postgres_bi
+    depends_on:
+      - postgres_bi
+
   retention_api:
     build: .
     container_name: retention_api
