@@ -3,7 +3,6 @@
 A production-grade predictive pipeline that transitions business analytics from descriptive (what happened) to prescriptive (what should we do). This engine predicts customer churn, estimates Customer Lifetime Value (CLV), and outputs dynamic marketing actions based on real-time RFM segmentation and SHAP explainability.
 
 ## System Architecture
-- **Environment Management:** `mamba` ensures strict dependency resolution for ML libraries.
 - **Experiment Tracking:** `MLflow` logs all XGBoost metrics, hyperparameters, and artifacts.
 - **Inference Service:** `FastAPI` serves predictions with strict Pydantic validation.
 - **Explainability:** `SHAP` (SHapley Additive exPlanations) provides the exact top 3 risk and retention drivers per customer.
