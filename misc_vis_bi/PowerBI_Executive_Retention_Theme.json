@@ -1,0 +1,28 @@
+{
+    "name": "Executive PMO Schematic Dark",
+    "dataColors": ["#00F2FE", "#4FACFE", "#00C9FF", "#92FE9D", "#FF0844", "#FFB199"],
+    "background": "#0F172A",
+    "foreground": "#F8FAFC",
+    "tableAccent": "#00F2FE",
+    "visualStyles": {
+        "*": {
+            "*": {
+                "background": [{ "show": true, "color": { "solid": { "color": "#1E293B" } }, "transparency": 15 }],
+                "border": [{ "show": true, "color": { "solid": { "color": "#334155" } }, "radius": 12 }],
+                "visualHeader": [{ "foreground": { "solid": { "color": "#CBD5E1" } } }],
+                "dropShadow": [{ "show": true, "color": { "solid": { "color": "#000000" } }, "position": "Outer", "blur": 8, "opacity": 20 }]
+            }
+        },
+        "card": {
+            "*": {
+                "labels": [{ "color": { "solid": { "color": "#00F2FE" } }, "fontSize": 32, "fontFamily": "Segoe UI Bold" }],
+                "categoryAxis": [{ "show": true, "color": { "solid": { "color": "#94A3B8" } }, "fontSize": 12 }]
+            }
+        },
+        "page": {
+            "*": {
+                "background": [{ "color": { "solid": { "color": "#0F172A" } }, "transparency": 0 }]
+            }
+        }
+    }
+}
