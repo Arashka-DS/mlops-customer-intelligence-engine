@@ -1,52 +1,91 @@
 version: '3.8'
 
 services:
-  postgres_bi:
+  postgres_crm:
     image: postgres:15-alpine
-    container_name: retention_db
+    container_name: crm_db
     environment:
-      POSTGRES_USER: bi_admin
-      POSTGRES_PASSWORD: bi_password
-      POSTGRES_DB: retention_warehouse
+      POSTGRES_USER: crm_admin
+      POSTGRES_PASSWORD: crm_password
+      POSTGRES_DB: customer_intelligence_db
     ports:
       - "5432:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pg_crm_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_admin -d customer_intelligence_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mlflow_server:
+    image: python:3.11-slim
+    container_name: crm_mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://crm_admin:crm_password@postgres_crm:5432/customer_intelligence_db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlruns
+    volumes:
+      - ./mlruns:/mlruns
+    command: >
+      bash -c "pip install mlflow psycopg2-binary && 
+               mlflow server --backend-store-uri postgresql://crm_admin:crm_password@postgres_crm:5432/customer_intelligence_db --default-artifact-root /mlruns --host 0.0.0.0 --port 5000"
+    depends_on:
+      postgres_crm:
+        condition: service_healthy
+
+  crm_api:
+    build: .
+    container_name: crm_fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres_crm
+      - DB_USER=crm_admin
+      - DB_PASSWORD=crm_password
+      - DB_NAME=customer_intelligence_db
+      - MLFLOW_TRACKING_URI=http://mlflow_server:5000
+    volumes:
+      - ./src:/app/src
+      - ./mlruns:/mlruns
+    command: >
+      bash -c "sleep 10 && python src/train.py && uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      postgres_crm:
+        condition: service_healthy
+      mlflow_server:
+        condition: service_started
+
+  crm_ui:
+    build: .
+    container_name: crm_streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://crm_api:8000
+    volumes:
+      - ./frontend:/app/frontend
+    command: streamlit run frontend/app.py --server.address 0.0.0.0
+    depends_on:
+      - crm_api
 
   metabase:
     image: metabase/metabase:latest
-    container_name: metabase_bi
+    container_name: crm_metabase
     ports:
       - "3000:3000"
     environment:
       - MB_DB_TYPE=postgres
-      - MB_DB_DBNAME=retention_warehouse
+      - MB_DB_DBNAME=customer_intelligence_db
       - MB_DB_PORT=5432
-      - MB_DB_USER=bi_admin
-      - MB_DB_PASS=bi_password
-      - MB_DB_HOST=postgres_bi
+      - MB_DB_USER=crm_admin
+      - MB_DB_PASS=crm_password
+      - MB_DB_HOST=postgres_crm
     depends_on:
-      - postgres_bi
+      postgres_crm:
+        condition: service_healthy
 
-  retention_api:
-    build: .
-    container_name: retention_api
-    ports:
-      - "8000:8000"
-    environment:
-      - DB_HOST=postgres_bi
-    depends_on:
-      - postgres_bi
-
-  crm_frontend:
-    image: python:3.11-slim
-    container_name: crm_frontend
-    ports:
-      - "8501:8501"
-    volumes:
-      - ./frontend:/app/frontend
-      - ./requirements.txt:/app/requirements.txt
-    working_dir: /app
-    command: bash -c "pip install streamlit requests && streamlit run frontend/app.py --server.address 0.0.0.0"
-    depends_on:
-      - retention_api
+volumes:
+  pg_crm_data:
