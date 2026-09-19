@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS customer_inferences (
     monthly_charges NUMERIC,
     churn_probability NUMERIC,
     predicted_clv NUMERIC,
-    cohort_half_life NUMERIC,
-    top_positive_driver VARCHAR(100),
-    top_negative_driver VARCHAR(100),
+    rfm_segment VARCHAR(50),
+    recommended_marketing_action VARCHAR(100),
+    top_churn_driver VARCHAR(100),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
