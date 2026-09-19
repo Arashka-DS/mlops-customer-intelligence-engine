@@ -1,0 +1,17 @@
+-- PowerBI SQL
+
+SELECT 
+    date_trunc('day', timestamp) AS inference_date,
+    COUNT(customer_id) AS total_customers_scored,
+    AVG(churn_probability) AS avg_portfolio_churn_risk,
+    SUM(predicted_clv) AS total_portfolio_clv,
+    top_positive_driver AS primary_churn_catalyst
+FROM customer_inferences
+GROUP BY 1, 5
+ORDER BY inference_date DESC;
+
+-- PowerBI DAX
+
+Total CLV at Risk: CLV_At_Risk = CALCULATE(SUM(customer_inferences[predicted_clv]), customer_inferences[churn_probability] > 0.65)
+
+Cohort Health Score: Health_Score = AVERAGE(customer_inferences[cohort_half_life])
