@@ -4,6 +4,7 @@ pydantic==2.8.2
 xgboost==2.1.0
 shap==0.46.0
 lifelines==0.28.0
+scipy<1.14.0
 mlflow==2.14.3
 pandas==2.2.2
 numpy==1.26.4
