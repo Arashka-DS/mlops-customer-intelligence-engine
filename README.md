@@ -18,7 +18,7 @@ A production-grade predictive pipeline that transitions business analytics from 
    ```
    (Note: The API container is configured to automatically generate synthetic data and train the initial XGBoost model on boot).
 3. **Access the Interfaces:**
-- **Streamlit CRM Dashboard:** `http://localhost:8501` (Interactive scoring and SHAP charts)
+- **Streamlit CRM Dashboard:** `http://localhost:9501` (Interactive scoring and SHAP charts)
 - **MLflow Tracking Server:** `http://localhost:5000` (View model experiments and Kaplan-Meier metrics)
 - **FastAPI Docs:** `http://localhost:8000/docs`
 - **Metabase BI:** `http://localhost:3000`
