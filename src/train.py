@@ -16,7 +16,7 @@ def generate_synthetic_data(n=2000):
     df = pd.DataFrame({
         "recency_days": np.random.randint(1, 180, n),
         "frequency_tx": np.random.randint(1, 50, n),
-        "monetary_value": np.random.uniform(50, 5000, n),
+        "monetary_value": np.random.uniform(5_000_000, 50_000_000, n),
         "app_sessions_last_30d": np.random.randint(0, 30, n),
         "support_tickets": np.random.randint(0, 5, n),
         "tenure_months": np.random.randint(1, 60, n),
