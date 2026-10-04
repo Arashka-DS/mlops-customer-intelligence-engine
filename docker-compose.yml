@@ -28,7 +28,7 @@ services:
     volumes:
       - ./mlruns:/mlruns
     command: >
-      bash -c "pip install mlflow psycopg2-binary && 
+      bash -c "pip install mlflow psycopg[binary] && 
                mlflow server --backend-store-uri postgresql://crm_admin:crm_password@postgres_crm:5432/customer_intelligence_db --default-artifact-root /mlruns --host 0.0.0.0 --port 5000"
     depends_on:
       postgres_crm:
