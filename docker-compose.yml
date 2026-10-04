@@ -29,7 +29,7 @@ services:
       - ./mlruns:/mlruns
     command: >
       bash -c "pip install mlflow psycopg[binary] && 
-               mlflow server --backend-store-uri postgresql://crm_admin:crm_password@postgres_crm:5432/customer_intelligence_db --default-artifact-root /mlruns --host 0.0.0.0 --port 5000"
+               mlflow server --backend-store-uri postgresql://crm_admin:crm_password@postgres_crm:5432/customer_intelligence_db --default-artifact-root /mlruns --host 0.0.0.0 --port 5000 --allowed-hosts '*'"
     depends_on:
       postgres_crm:
         condition: service_healthy
@@ -37,6 +37,7 @@ services:
   crm_api:
     build: .
     container_name: crm_fastapi
+    restart: always
     ports:
       - "8000:8000"
     environment:
@@ -49,7 +50,7 @@ services:
       - ./src:/app/src
       - ./mlruns:/mlruns
     command: >
-      bash -c "sleep 10 && python src/train.py && uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload"
+      bash -c "sleep 60 && python src/train.py && uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       postgres_crm:
         condition: service_healthy
