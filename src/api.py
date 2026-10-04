@@ -1,13 +1,13 @@
 import os
 import pandas as pd
-import numpy as np
 import joblib
+import psycopg2
+import threading
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI(title="Customer Intelligence & Prescriptive Engine API")
 
-# Load Models
 try:
     model = joblib.load("mlruns/local_models/xgb_model.pkl")
     explainer = joblib.load("mlruns/local_models/shap_explainer.pkl")
@@ -24,40 +24,56 @@ class CustomerProfile(BaseModel):
     tenure_months: int
 
 def calculate_rfm_segment(recency, frequency, monetary):
-    """Business Heuristics: RFM (Recency, Frequency, Monetary) Segmentation"""
-    if recency <= 30 and frequency >= 15 and monetary >= 2500:
+    # Scaled to Toman (e.g., 25,000,000 = 25M Toman)
+    if recency <= 30 and frequency >= 15 and monetary >= 25000000:
         return "Champion VIP"
     elif recency <= 60 and frequency >= 10:
         return "Loyal Customer"
-    elif recency > 90 and frequency > 15 and monetary >= 1500:
+    elif recency > 90 and frequency > 15 and monetary >= 15000000:
         return "At-Risk High-Value"
-    elif recency > 90 and monetary < 500:
+    elif recency > 90 and monetary < 5000000:
         return "Low-Value Churner"
     else:
         return "Standard Active"
+
+def log_inference(customer_id, tenure, monetary, churn_prob, segment, action, top_driver):
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            database=os.getenv("DB_NAME", "customer_intelligence_db"),
+            user=os.getenv("DB_USER", "crm_admin"), 
+            password=os.getenv("DB_PASSWORD", "crm_password")
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO customer_inferences 
+            (customer_id, tenure_months, monetary_value_toman, churn_probability, rfm_segment, prescriptive_action, top_churn_driver)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (customer_id, tenure, monetary, churn_prob, segment, action, top_driver))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"DB Error: {e}", flush=True)
 
 @app.post("/predict")
 def predict_retention(profile: CustomerProfile):
     data = pd.DataFrame([profile.dict(exclude={"customer_id"})])
     
-    # 1. ML Scoring (Predictive)
     churn_prob = float(model.predict_proba(data)[0][1])
-    
-    # 2. Business Logic (Heuristic)
     segment = calculate_rfm_segment(profile.recency_days, profile.frequency_tx, profile.monetary_value)
     
-    # 3. SHAP Explainability (Diagnostic)
     shap_values = explainer.shap_values(data)
     feature_impacts = list(zip(data.columns, shap_values[0]))
     feature_impacts.sort(key=lambda x: abs(x[1]), reverse=True)
+    top_driver_name = feature_impacts[0][0]
     top_drivers = [{"feature": f, "impact": round(float(v), 3)} for f, v in feature_impacts[:3]]
     
-    # 4. Prescriptive Action Matrix
     action = "Monitor - No immediate action required."
     
     if churn_prob > 0.75:
         if "VIP" in segment or "High-Value" in segment:
-            action = "🚨 CRITICAL: Alert Account Exec. Deploy 30% Annual Retention Discount."
+            action = "🚨 CRITICAL: Deploy 30% Annual Retention Discount (up to 2,000,000 Toman)."
         else:
             action = "Automated Win-Back Email Sequence (10% Discount)."
     elif churn_prob > 0.45:
@@ -67,9 +83,12 @@ def predict_retention(profile: CustomerProfile):
             action = "Priority Support Routing & Apology Campaign."
         else:
             action = "Targeted Feature-Adoption Drip Campaign."
-    else:
-        if "VIP" in segment:
-            action = "Send Exclusive Beta Access Invite to maintain loyalty."
+            
+    # Save to Postgres asynchronously
+    threading.Thread(
+        target=log_inference, 
+        args=(profile.customer_id, profile.tenure_months, profile.monetary_value, churn_prob, segment, action, top_driver_name)
+    ).start()
             
     return {
         "customer_id": profile.customer_id,
