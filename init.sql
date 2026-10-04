@@ -1,3 +1,5 @@
+CREATE DATABASE mlflow_tracking_db;
+CREATE DATABASE customer_intelligence_db;
 CREATE TABLE IF NOT EXISTS customer_inferences (
     inference_id SERIAL PRIMARY KEY,
     customer_id VARCHAR(50),
