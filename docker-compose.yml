@@ -61,7 +61,7 @@ services:
     build: .
     container_name: crm_streamlit
     ports:
-      - "9501:8501"
+      - "7501:8501"
     environment:
       - API_URL=http://crm_api:8000
     volumes:
